@@ -1,5 +1,9 @@
+app/storage
 /vendor
 /node_modules
 .env
 
 .DS_Store
+
+# PhpStorm
+.idea/
