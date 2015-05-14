@@ -5,6 +5,7 @@ use Northstar\Services\DrupalAPI;
 use Northstar\Models\User;
 use Input;
 use Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class UserController extends Controller
 {
@@ -156,24 +157,19 @@ class UserController extends Controller
      *
      * @param $id - User ID
      * @return Response
+     * @throws HttpException
      */
     public function destroy($id)
     {
         $user = User::where('_id', $id)->first();
-        $message = 'The resource does not exist';
-        $code = 404;
-        $status = 'error';
-
 
         if ($user instanceof User) {
             $user->delete();
 
-            $message = 'No Content';
-            $code = 204;
-            $status = 'success';
+            return $this->respond('No Content.', 204);
+        } else {
+            throw new HttpException(404, 'The resource does not exist.');
         }
-
-        return $this->respond($message, $code, $status);
     }
 
 }

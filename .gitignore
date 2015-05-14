@@ -1,4 +1,3 @@
-app/storage
 /vendor
 /node_modules
 .env

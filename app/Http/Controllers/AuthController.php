@@ -4,6 +4,7 @@ use Northstar\Models\User;
 use Northstar\Models\Token;
 use Illuminate\Http\Request;
 use Hash;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AuthController extends Controller
 {
@@ -13,6 +14,7 @@ class AuthController extends Controller
      *
      * @param Request $request
      * @return Response
+     * @throws HttpException
      */
     public function login(Request $request)
     {
@@ -29,12 +31,8 @@ class AuthController extends Controller
             $user = User::where('mobile', '=', $input['mobile'])->first();
         }
 
-        $code = 200;
-        $status = '';
-
         if (!($user instanceof User)) {
-            $data = 'User is not registered.';
-            $status = 'error';
+            throw new HttpException(404, 'User is not registered.');
         } elseif (Hash::check($input['password'], $user->password)) {
             $token = $user->login();
             $token->user = $user->toArray();
@@ -42,25 +40,22 @@ class AuthController extends Controller
             // Return the session token with the user.
             $user->session_token = $token->key;
             $data = $user;
+            return $this->respond($user);
         } else {
-            $data = 'Incorrect password.';
-            $status = 'error';
-            $code = 412;
+            throw new HttpException(412, 'Incorrect password.');
         }
-
-        return $this->respond($data, $code, $status);
-
 
     }
 
     /**
      * Logout the current user by invalidating their session token.
      * @return Response
+     * @throws HttpException
      */
     public function logout(Request $request)
     {
         if (!$request->header('Session')) {
-            return $this->respond('No token given.', 200, 'error');
+            throw new HttpException(422, 'No token given.');
         }
 
         $input_token = $request->header('Session');
@@ -68,20 +63,14 @@ class AuthController extends Controller
         $user = Token::userFor($input_token);
 
         if (empty($token)) {
-            $status = 'error';
-            $data = 'No active session found.';
+            throw new HttpException(404, 'No active session found.');
         } elseif ($token->user_id !== $user->_id) {
-            $status = 'error';
-            $data = 'You do not own this token.';
+            throw new HttpException(403, 'You do not own this token.');
         } elseif ($token->delete()) {
-            $status = 'success';
-            $data = 'User logged out successfully.';
+            return $this->respond('User logged out successfully.');
         } else {
-            $status = 'error';
-            $data = 'User could not log out. Please try again.';
+            throw new HttpException(400, 'User could not log out. Please try again.');
         }
-
-        return $this->respond($data, 200, $status);
 
     }
 
