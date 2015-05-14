@@ -160,14 +160,20 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::where('_id', $id)->first();
+        $message = 'The resource does not exist';
+        $code = 404;
+        $status = 'error';
+
 
         if ($user instanceof User) {
             $user->delete();
 
-            return Response::json("No Content", 204);
+            $message = 'No Content';
+            $code = 204;
+            $status = 'success';
         }
 
-        return Response::json("The resource does not exist", 404);
+        return $this->respond($message, $code, $status);
     }
 
 }

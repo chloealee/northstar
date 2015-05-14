@@ -28,20 +28,28 @@ class AuthController extends Controller
         } elseif ($request->has('mobile')) {
             $user = User::where('mobile', '=', $input['mobile'])->first();
         }
-        if (!($user instanceof User)) {
-            return response()->json("User is not registered.");
-        }
 
-        if (Hash::check($input['password'], $user->password)) {
+        $code = 200;
+        $status = '';
+
+        if (!($user instanceof User)) {
+            $data = 'User is not registered.';
+            $status = 'error';
+        } elseif (Hash::check($input['password'], $user->password)) {
             $token = $user->login();
             $token->user = $user->toArray();
 
             // Return the session token with the user.
             $user->session_token = $token->key;
-            return response()->json($user, 200);
+            $data = $user;
         } else {
-            return response()->json("Incorrect password.", 412);
+            $data = 'Incorrect password.';
+            $status = 'error';
+            $code = 412;
         }
+
+        return $this->respond($data, $code, $status);
+
 
     }
 
@@ -52,7 +60,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         if (!$request->header('Session')) {
-            return response()->json('No token given.');
+            return $this->respond('No token given.', 200, 'error');
         }
 
         $input_token = $request->header('Session');
@@ -60,16 +68,20 @@ class AuthController extends Controller
         $user = Token::userFor($input_token);
 
         if (empty($token)) {
-            return response()->json('No active session found.');
-        }
-        if ($token->user_id !== $user->_id) {
-            response()->json('You do not own this token.');
-        }
-        if ($token->delete()) {
-            return response()->json('User logged out successfully.', 200);
+            $status = 'error';
+            $data = 'No active session found.';
+        } elseif ($token->user_id !== $user->_id) {
+            $status = 'error';
+            $data = 'You do not own this token.';
+        } elseif ($token->delete()) {
+            $status = 'success';
+            $data = 'User logged out successfully.';
         } else {
-            return response()->json('User could not log out. Please try again.');
+            $status = 'error';
+            $data = 'User could not log out. Please try again.';
         }
+
+        return $this->respond($data, 200, $status);
 
     }
 
