@@ -51,11 +51,11 @@ class AuthTest extends TestCase
         $this->assertJson($content);
 
         // Response should include user ID & session token
-        $this->assertArrayHasKey('_id', $data);
-        $this->assertArrayHasKey('session_token', $data);
+        $this->assertArrayHasKey('_id', $data['data']);
+        $this->assertArrayHasKey('session_token', $data['data']);
 
         // Assert token exists in database
-        $tokenCount = Token::where('key', '=', $data['session_token'])->count();
+        $tokenCount = Token::where('key', '=', $data['data']['session_token'])->count();
         $this->assertEquals($tokenCount, 1);
     }
 
