@@ -19,7 +19,7 @@ class AuthenticateAPI
         $app_id = $request->header('X-DS-Application-Id');
         $api_key = $request->header('X-DS-REST-API-Key');
 
-        if (!ApiKey::where("app_id", '=', $app_id)->where("api_key", '=', $api_key)->exists()) {
+        if (!ApiKey::exists($app_id, $api_key)) {
             return Response::json("Unauthorized access.", 404);
         }
 

@@ -15,15 +15,17 @@ class ApiKeyTableSeeder extends Seeder
     {
         DB::table('api_keys')->delete();
 
-        ApiKey::create(array(
+        ApiKey::create([
             'app_id' => '456',
-            'api_key' => 'abc4324'
-        ));
+            'api_key' => 'abc4324',
+            'scope' => 'normal'
+        ]);
 
-        ApiKey::create(array(
+        ApiKey::create([
             'app_id' => '123',
-            'api_key' => '5464utyrs'
-        ));
+            'api_key' => '5464utyrs',
+            'scope' => 'admin'
+        ]);
 
     }
 

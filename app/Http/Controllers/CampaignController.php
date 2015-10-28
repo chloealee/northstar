@@ -122,8 +122,22 @@ class CampaignController extends Controller
         if (!$campaign) {
             $statusCode = 201;
 
-            // Create a Drupal signup via Drupal API, and store signup ID in Northstar.
-            $signup_id = $this->drupal->campaignSignup($user->drupal_id, $campaign_id, $request->input('source'));
+            // If $request->has('signup_id'), then we want to "force" making it.
+            if($request->has('signup_id')) {
+
+                // Check that we're allowed to.
+                $key = ApiKey::current();
+                if(!$key->checkScope('admin')) {
+                    throw new HttpException(403, 'The `signup_id` parameter needs an API Key with `admin` scope.');
+                }
+
+                $signup_id = $request->get('signup_id');
+
+            } else {
+                // Create a Drupal signup via Drupal API, and store signup ID in Northstar.
+                $signup_id = $this->drupal->campaignSignup($user->drupal_id, $campaign_id, $request->input('source'));
+            }
+
 
             // Save reference to the signup on the user object.
             $campaign = new Campaign;
