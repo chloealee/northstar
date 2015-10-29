@@ -119,6 +119,7 @@ class CampaignTest extends TestCase
         ];
 
         // use key that has `admin` scope
+        // $key->checkScope('admin')
 
         // assert response is 201 and has `signup_id` field
         $this->assertEquals(201, $response->getStatusCode());

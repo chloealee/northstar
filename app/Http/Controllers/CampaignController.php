@@ -122,6 +122,59 @@ class CampaignController extends Controller
         if (!$campaign) {
             $statusCode = 201;
 
+            // Create a Drupal signup via Drupal API, and store signup ID in Northstar.
+            $signup_id = $this->drupal->campaignSignup($user->drupal_id, $campaign_id, $request->input('source'));
+
+            // Save reference to the signup on the user object.
+            $campaign = new Campaign;
+            $campaign->drupal_id = $campaign_id;
+            $campaign->signup_id = $signup_id;
+            $campaign->signup_source = $request->input('source');
+            // If group is specified, use that. Otherwise, use the signup_id.
+            $campaign->signup_group = $request->input('group') ?: $signup_id;
+            $campaign = $user->campaigns()->save($campaign);
+
+            // Fire sign up event.
+            event(new UserSignedUp($user, $campaign));
+        }
+
+        return $this->respond($campaign, $statusCode);
+    }
+
+    /**
+     * Forward user's campaign signup from phoenix to sync campaign activity.
+     * POST /forwardSignup
+     *
+     * @param $drupal_id - Drupal ID
+     * @param $signup_id - Druapl signup campaign node ID
+     * @param $campaign_id - Drupal campaign node ID
+     * @param Request $request
+     *
+     * @return \Illuminate\Http\Response
+     * @throws HttpException
+     */
+    public function forwardSignup($drupal_id, $signup_id, $campaign_id, Request $request)
+    {
+        // Validate request body
+        $this->validate($request, [
+            'source' => ['required']
+        ]);
+
+        // Get the currently authenticated Northstar user.
+        $user = User::where('drupal_id', $drupal_id)->first();
+
+        // Return an error if the user doesn't exist.
+        if (!$user) {
+            throw new HttpException(401, 'The user must have a Drupal ID to sign up for a campaign.');
+        }
+
+        // Check if campaign signup already exists.
+        $campaign = $user->campaigns()->where('drupal_id', $campaign_id)->first();
+
+        $statusCode = 200;
+        if (!$campaign) {
+            $statusCode = 201;
+
             // If $request->has('signup_id'), then we want to "force" making it.
             if($request->has('signup_id')) {
 
@@ -133,11 +186,7 @@ class CampaignController extends Controller
 
                 $signup_id = $request->get('signup_id');
 
-            } else {
-                // Create a Drupal signup via Drupal API, and store signup ID in Northstar.
-                $signup_id = $this->drupal->campaignSignup($user->drupal_id, $campaign_id, $request->input('source'));
             }
-
 
             // Save reference to the signup on the user object.
             $campaign = new Campaign;
