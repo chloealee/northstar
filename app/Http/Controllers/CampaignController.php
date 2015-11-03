@@ -145,23 +145,24 @@ class CampaignController extends Controller
      * Forward user's campaign signup from phoenix to sync campaign activity.
      * POST /forwardSignup
      *
-     * @param $drupal_id - Drupal ID
-     * @param $signup_id - Druapl signup campaign node ID
-     * @param $campaign_id - Drupal campaign node ID
      * @param Request $request
      *
      * @return \Illuminate\Http\Response
      * @throws HttpException
      */
-    public function forwardSignup($drupal_id, $signup_id, $campaign_id, Request $request)
+    public function forwardSignup(Request $request)
     {
         // Validate request body
         $this->validate($request, [
-            'source' => ['required']
+            'source' => ['required'],
+            'drupal_id' =>['required'],
+            'campaign_id' => ['required'],
+            'signup_id' => ['required']
         ]);
 
         // Get the currently authenticated Northstar user.
-        $user = User::where('drupal_id', $drupal_id)->first();
+        $user = User::where('drupal_id', $request->input('uid'))->first();
+        $campaign_id = $request->input('campaign_id');
 
         // Return an error if the user doesn't exist.
         if (!$user) {
@@ -175,20 +176,12 @@ class CampaignController extends Controller
         if (!$campaign) {
             $statusCode = 201;
 
-            // If $request->has('signup_id'), then we want to "force" making it.
-            if($request->has('signup_id')) {
+        $key = ApiKey::current();
 
-                // Check that we're allowed to.
-                $key = ApiKey::current();
-                if(!$key->checkScope('admin')) {
-                    throw new HttpException(403, 'The `signup_id` parameter needs an API Key with `admin` scope.');
-                }
+        // Check that we're allowed to save reference to the signup on the user object.
+        if($key->checkScope('admin')) {
+            $signup_id = $request->get('signup_id');
 
-                $signup_id = $request->get('signup_id');
-
-            }
-
-            // Save reference to the signup on the user object.
             $campaign = new Campaign;
             $campaign->drupal_id = $campaign_id;
             $campaign->signup_id = $signup_id;
@@ -199,6 +192,9 @@ class CampaignController extends Controller
 
             // Fire sign up event.
             event(new UserSignedUp($user, $campaign));
+            }
+        } else {
+            throw new HttpException(403, 'The `signup_id` parameter needs an API Key with `admin` scope.');
         }
 
         return $this->respond($campaign, $statusCode);
