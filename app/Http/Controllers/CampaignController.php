@@ -179,7 +179,7 @@ class CampaignController extends Controller
         $key = ApiKey::current();
 
         // Check that we're allowed to save reference to the signup on the user object.
-        if($key->checkScope('admin')) {
+        if ($key->checkScope('admin')) {
             $signup_id = $request->get('signup_id');
 
             $campaign = new Campaign;

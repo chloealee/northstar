@@ -106,7 +106,7 @@ class CampaignTest extends TestCase
 
     /**
      * Test for forwarding a campaign signup from phoenix -> northstar
-     * POST /user/campaigns/:nid/signup
+     * POST /forwardSignup
      *
      * @return void
      */
@@ -119,7 +119,7 @@ class CampaignTest extends TestCase
         ];
 
         // use key that has `admin` scope
-        // $key->checkScope('admin')
+        $key->checkScope('admin')
 
         // assert response is 201 and has `signup_id` field
         $this->assertEquals(201, $response->getStatusCode());
@@ -131,7 +131,7 @@ class CampaignTest extends TestCase
 
     /**
      * Test that admin scope is required to complete forwarded signup
-     * POST /user/campaigns/:nid/signup
+     * POST /forwardSignup
      *
      * @return void
      */
@@ -144,6 +144,7 @@ class CampaignTest extends TestCase
         ];
 
         // use that key that has `normal` scope
+        $key->checkScope('normal');
 
         // asset response throws a 403 error
         $this->assertEquals(201, $response->getStatusCode());
